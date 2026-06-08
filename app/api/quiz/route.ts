@@ -38,7 +38,9 @@ const TEAMS = [
 
 // KV өгөгдлийн сангийн хувьсагчид байгаа эсэхийг шалгах туслах функц
 const checkKvAvailable = () => {
-  return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+  return !!(
+    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  );
 };
 
 // 2. POST: Хэрэглэгчийн хариултыг хадгалах, багт хуваарилах
