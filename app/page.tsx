@@ -507,7 +507,6 @@ function App() {
 
   const handleFinish = async () => {
     setLoading(true);
-    setShowResult(true);
     setSubmitError(null);
     const finalScore = calculateScore();
 
@@ -517,13 +516,24 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: userName, score: finalScore }),
       });
+
       if (res.ok) {
         const data = await res.json();
         setBackendResult(data);
+        // Дата бааз руу амжилттай хадгалагдсаны дараа л үр дүнгийн хуудсыг нээнэ
+        setShowResult(true);
+      } else {
+        // Хэрэв сервер 500 эсвэл өөр алдаа өгвөл
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Сервер датаг хүлээж авсангүй.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("API Error:", err);
-      setSubmitError("Үр дүнг хадгалахад алдаа гарлаа. Таны оноо харагдах боловч багт хуваарилагдах боломжгүй байна.");
+      setSubmitError(
+        "Үр дүнг хадгалахад алдаа гарлаа. Таны оноо харагдах боловч багт хуваарилагдах боломжгүй байна.",
+      );
+      // Алдаа гарсан ч гэсэн хэрэглэгчид өөрийнх нь оноог харуулахын тулд үр дүнгийн хуудсыг нээнэ
+      setShowResult(true);
     } finally {
       setLoading(false);
     }

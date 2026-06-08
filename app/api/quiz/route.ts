@@ -171,3 +171,24 @@ export async function GET() {
     );
   }
 }
+export async function DELETE() {
+  try {
+    const { kv } = await import("@vercel/kv");
+
+    // KV дээрх quiz_submissions түлхүүрийг бүрмөсөн устгана
+    await kv.del("quiz_submissions");
+
+    // Мөн локал бэкап массиваа хоосон болгоно
+    localSubmissionsBackup = [];
+
+    return NextResponse.json(
+      { message: "Лидэрбоард амжилттай цэвэрлэгдлээ!" },
+      { status: 200 },
+    );
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: "Устгахад алдаа гарлаа", details: error.message },
+      { status: 500 },
+    );
+  }
+}
