@@ -10,11 +10,7 @@ interface Submission {
 }
 
 // Локал орчинд зориулсан Бэкап (Fallback) санах ой
-let localSubmissionsBackup: Submission[] = [
-  { id: "local-1", name: "Ананд (Бэкап)", score: 38 },
-  { id: "local-2", name: "Мишээл (Бэкап)", score: 35 },
-  { id: "local-3", name: "Тэмүүлэн (Бэкап)", score: 28 },
-];
+let localSubmissionsBackup: Submission[] = [];
 
 // Багуудын тогтмол мэдээлэл
 const TEAMS = [
