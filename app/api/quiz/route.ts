@@ -1,6 +1,9 @@
 /* eslint-disable prefer-const */
 import { NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
+import { Redis } from "@upstash/redis"; // Swapped out @vercel/kv for the native Upstash client
+
+// Force Next.js to run this live and bypass any layout casing/caches
+export const dynamic = "force-dynamic";
 
 // 1. Төрөлжилтийг баталгаажуулах интерфэйс
 interface Submission {
@@ -11,6 +14,12 @@ interface Submission {
 
 // Локал орчинд зориулсан Бэкап (Fallback) санах ой
 let localSubmissionsBackup: Submission[] = [];
+
+// Explicitly initialize Redis with your custom environment variable names
+const kv = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || "",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+});
 
 // Багуудын тогтмол мэдээлэл
 const TEAMS = [
@@ -38,6 +47,9 @@ const TEAMS = [
 
 // KV өгөгдлийн сангийн хувьсагчид байгаа эсэхийг шалгах туслах функц
 const checkKvAvailable = () => {
+  console.log("Checking credentials connection status...");
+  console.log("URL status:", !!process.env.UPSTASH_REDIS_REST_URL);
+  console.log("TOKEN status:", !!process.env.UPSTASH_REDIS_REST_TOKEN);
   return !!(
     process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
   );
@@ -63,14 +75,16 @@ export async function POST(req: Request) {
 
     let submissions: Submission[] = [];
     const isKvAvailable = checkKvAvailable();
+    console.log("IS KV AVAILABLE:", isKvAvailable);
 
     if (isKvAvailable) {
       try {
-        // Vercel KV-ээс өмнөх бүх өгөгдлийг уншина
+        // Fetch existing logs from Upstash Redis
         submissions = (await kv.get<Submission[]>("quiz_submissions")) || [];
         submissions.push(newSubmission);
-        // Шинэчлэгдсэн жагсаалтыг KV руу хадгална
+        // Write back updated list
         await kv.set("quiz_submissions", submissions);
+        console.log("✅ Successfully saved to Upstash Database!");
       } catch (kvError) {
         console.error(
           "⚠️ KV руу бичихэд алдаа гарлаа, локал руу шилжлээ:",
@@ -80,7 +94,7 @@ export async function POST(req: Request) {
         submissions = [...localSubmissionsBackup];
       }
     } else {
-      // Локал бэкап санах ой руу нэмэх
+      console.log("⚠️ Credentials missing. Saving to server memory instead.");
       localSubmissionsBackup.push(newSubmission);
       submissions = [...localSubmissionsBackup];
     }
@@ -173,14 +187,11 @@ export async function GET() {
     );
   }
 }
+
+// 4. DELETE: Wipe all logs out of database
 export async function DELETE() {
   try {
-    const { kv } = await import("@vercel/kv");
-
-    // KV дээрх quiz_submissions түлхүүрийг бүрмөсөн устгана
     await kv.del("quiz_submissions");
-
-    // Мөн локал бэкап массиваа хоосон болгоно
     localSubmissionsBackup = [];
 
     return NextResponse.json(
