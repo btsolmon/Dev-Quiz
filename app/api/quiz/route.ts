@@ -10,6 +10,7 @@ interface Submission {
   id: string;
   name: string;
   score: number;
+  fingerprint: string;
 }
 
 // Локал орчинд зориулсан Бэкап (Fallback) санах ой
@@ -55,79 +56,101 @@ const checkKvAvailable = () => {
   );
 };
 
+// Баг болон байр эзлүүлэгч туслах функц
+const calculateTeamAndRank = (submissions: Submission[], targetId: string) => {
+  // 1. Бүх хэрэглэгчдийг оноогоор нь өндрөөс бага руу жагсаана
+  const sortedScores = [...submissions].sort((a, b) => b.score - a.score);
+
+  // Хэрэглэгчийн одоогийн эзэлж буй байр
+  const currentIdx = sortedScores.findIndex((s) => s.id === targetId);
+  const rank = currentIdx + 1;
+
+  // 2. Драфт / Тэнцүү хуваарилах Могой (Snake) алгоритм
+  const numTeams = TEAMS.length;
+  const round = Math.floor(currentIdx / numTeams);
+  let teamIndex = 0;
+
+  if (round % 2 === 0) {
+    teamIndex = currentIdx % numTeams;
+  } else {
+    teamIndex = numTeams - 1 - (currentIdx % numTeams);
+  }
+
+  const team = TEAMS[teamIndex];
+  const isCaptain = round === 0; // Эхний 4 хүн бол ахлагч
+
+  return {
+    team: {
+      ...team,
+      name: isCaptain ? `${team.name} [АХЛАГЧ]` : team.name,
+    },
+    rank,
+    isCaptain,
+  };
+};
+
 // 2. POST: Хэрэглэгчийн хариултыг хадгалах, багт хуваарилах
 export async function POST(req: Request) {
   try {
-    const { name, score } = await req.json();
+    const { name, score, fingerprint } = await req.json();
 
-    if (!name || score === undefined || typeof score !== "number") {
+    if (
+      !name ||
+      score === undefined ||
+      typeof score !== "number" ||
+      !fingerprint
+    ) {
       return NextResponse.json(
-        { error: "Нэр эсвэл оноо дутуу байна." },
+        { error: "Мэдээлэл дутуу байна." },
         { status: 400 },
       );
+    }
+
+    const isKvAvailable = checkKvAvailable();
+    let submissions: Submission[] = [];
+
+    if (isKvAvailable) {
+      submissions = (await kv.get<Submission[]>("quiz_submissions")) || [];
+    } else {
+      submissions = [...localSubmissionsBackup];
+    }
+
+    // Өмнө нь хариулсан эсэхийг шалгах
+    const existing = submissions.find((s) => s.fingerprint === fingerprint);
+    if (existing) {
+      const result = calculateTeamAndRank(submissions, existing.id);
+      return NextResponse.json({
+        ...result,
+        totalParticipants: submissions.length,
+        alreadySubmitted: true,
+      });
     }
 
     const newSubmission: Submission = {
       id: Math.random().toString(36).substring(2, 9),
       name: name.trim(),
       score,
+      fingerprint,
     };
 
-    let submissions: Submission[] = [];
-    const isKvAvailable = checkKvAvailable();
-    console.log("IS KV AVAILABLE:", isKvAvailable);
+    submissions.push(newSubmission);
 
     if (isKvAvailable) {
       try {
-        // Fetch existing logs from Upstash Redis
-        submissions = (await kv.get<Submission[]>("quiz_submissions")) || [];
-        submissions.push(newSubmission);
-        // Write back updated list
         await kv.set("quiz_submissions", submissions);
         console.log("✅ Successfully saved to Upstash Database!");
       } catch (kvError) {
-        console.error(
-          "⚠️ KV руу бичихэд алдаа гарлаа, локал руу шилжлээ:",
-          kvError,
-        );
         localSubmissionsBackup.push(newSubmission);
-        submissions = [...localSubmissionsBackup];
       }
     } else {
-      console.log("⚠️ Credentials missing. Saving to server memory instead.");
       localSubmissionsBackup.push(newSubmission);
-      submissions = [...localSubmissionsBackup];
     }
 
-    // 1. Бүх хэрэглэгчдийг оноогоор нь өндрөөс бага руу жагсаана
-    const sortedScores = [...submissions].sort((a, b) => b.score - a.score);
-
-    // Хэрэглэгчийн одоогийн эзэлж буй байр
-    const currentIdx = sortedScores.findIndex((s) => s.id === newSubmission.id);
-    const rank = currentIdx + 1;
-
-    // 2. Драфт / Тэнцүү хуваарилах Могой (Snake) алгоритм
-    const numTeams = TEAMS.length;
-    const round = Math.floor(currentIdx / numTeams);
-    let teamIndex = 0;
-
-    if (round % 2 === 0) {
-      teamIndex = currentIdx % numTeams;
-    } else {
-      teamIndex = numTeams - 1 - (currentIdx % numTeams);
-    }
-
-    const team = TEAMS[teamIndex];
-    const isCaptain = round === 0; // Эхний 4 хүн бол ахлагч
+    const result = calculateTeamAndRank(submissions, newSubmission.id);
 
     return NextResponse.json({
-      team: {
-        ...team,
-        name: isCaptain ? `${team.name} [АХЛАГЧ]` : team.name,
-      },
-      rank,
+      ...result,
       totalParticipants: submissions.length,
-      isCaptain,
     });
   } catch (error: any) {
     console.error("Quiz submission error:", error);
@@ -139,8 +162,11 @@ export async function POST(req: Request) {
 }
 
 // 3. GET: Лайв түүх болон Leaderboard харуулах
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const fingerprint = searchParams.get("fingerprint");
+
     let submissions: Submission[] = [];
     const isKvAvailable = checkKvAvailable();
 
@@ -161,6 +187,16 @@ export async function GET() {
     // Бүх оноог өндрөөс бага руу нь эрэмбэлж жагсаалт болгох
     const leaderboard = [...submissions].sort((a, b) => b.score - a.score);
 
+    // Хэрэв fingerprint ирсэн бол тухайн хэрэглэгчийн өмнөх үр дүнг хайх
+    let userResult = null;
+    if (fingerprint) {
+      const existing = submissions.find((s) => s.fingerprint === fingerprint);
+      if (existing) {
+        const calc = calculateTeamAndRank(submissions, existing.id);
+        userResult = { ...calc, score: existing.score, name: existing.name };
+      }
+    }
+
     return NextResponse.json(
       {
         totalParticipants: submissions.length,
@@ -169,6 +205,7 @@ export async function GET() {
           2,
           submissions.length + Math.floor(Math.random() * 4 + 1),
         ),
+        userSubmission: userResult,
         // Жагсаалтыг ранкжуулж илгээх
         leaderboard: leaderboard.map((s, idx) => ({
           rank: idx + 1,

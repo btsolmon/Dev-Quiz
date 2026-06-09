@@ -341,15 +341,31 @@ function App() {
   );
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fingerprint, setFingerprint] = useState<string>("");
 
-  // Лайв хэрэглэгчдийн тоог авах
+  // Хуудас ачаалагдах үед fingerprint үүсгэх/унших болон статусыг шалгах
   useEffect(() => {
+    let fp = localStorage.getItem("dev_quiz_fp");
+    if (!fp) {
+      fp = Math.random().toString(36).substring(2, 15) + Date.now();
+      localStorage.setItem("dev_quiz_fp", fp);
+    }
+    setFingerprint(fp);
+
     const fetchStats = async () => {
       try {
-        const res = await fetch("/api/quiz");
+        const res = await fetch(`/api/quiz?fingerprint=${fp}`);
         if (res.ok) {
           const data = await res.json();
           setActiveUsers(data.activeUsers);
+
+          // Хэрэв өмнө нь хариулсан бол шууд үр дүнг харуулах
+          if (data.userSubmission) {
+            setUserName(data.userSubmission.name);
+            setBackendResult(data.userSubmission);
+            setIsStarted(true);
+            setShowResult(true);
+          }
         }
       } catch (e) {
         console.error("Stats error:", e);
@@ -395,7 +411,11 @@ function App() {
       const res = await fetch("/api/quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: userName, score: finalScore }),
+        body: JSON.stringify({
+          name: userName,
+          score: finalScore,
+          fingerprint,
+        }),
       });
 
       if (res.ok) {
@@ -665,14 +685,6 @@ function App() {
                   );
                 })}
               </div>
-
-              {/* Буцах товчлуур */}
-              <button
-                onClick={handleReset}
-                className="px-6 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-700 font-medium transition duration-200 text-sm w-full sm:w-auto"
-              >
-                Дахин эхлэх
-              </button>
             </div>
           )}
         </main>
