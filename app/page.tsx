@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Leaderboard from "./components/Leaderboard";
 
-// 40 асуултын сан
+// 30 асуултын сан
 const questionsData = [
   // === JAVASCRIPT (1-10) ===
   {
@@ -21,13 +21,8 @@ const questionsData = [
   {
     id: 2,
     category: "JavaScript",
-    question: "Дараахын аль нь 'closure'-ийг зөв тодорхойлсон бэ?",
-    options: [
-      "Дотоод функц гадаад функцийнхээ хувьсагчдад хандах боломж",
-      "Гадны функц дотоод функцийнхээ хувьсагчид хандах боломж",
-      "Функцийг шууд устгах процесс",
-      "Зөвхөн глобал хувьсагч ашиглах тухай ойлголт",
-    ],
+    question: "Дараах кодын үр дүн юу байх вэ? console.log(2 + '2' - 1);",
+    options: ["21", "3", "22", "NaN"],
     answer: 0,
   },
   {
@@ -52,17 +47,16 @@ const questionsData = [
   {
     id: 5,
     category: "JavaScript",
-    question: "Дараах аргуудын аль нь массивын төгсгөлд элемент нэмдэг вэ?",
+    question: "Дараах аргуудын аль нь array-ийн төгсгөлд элемент нэмдэг вэ?",
     options: ["pop()", "shift()", "push()", "unshift()"],
     answer: 2,
   },
   {
     id: 6,
     category: "JavaScript",
-    question:
-      "JavaScript-д хувьсагчийг block scope-той зарлахын тулд аль түлхүүр үгийг ашиглах вэ?",
-    options: ["var", "let", "global", "define"],
-    answer: 1,
+    question: "Дараах кодын үр дүн юу байх вэ? console.log([] == ![]);",
+    options: ["true", "false", "undefined", "SyntaxError"],
+    answer: 0,
   },
   {
     id: 7,
@@ -80,21 +74,17 @@ const questionsData = [
     id: 8,
     category: "JavaScript",
     question:
-      "Массивын бүх элементийг нэг утга руу хөрвүүлэн хураангуйлахад аль аргыг ашигладаг вэ?",
+      "Array-ийн бүх элементийг нэг утга руу хөрвүүлэн хураангуйлахад аль аргыг ашигладаг вэ?",
     options: ["map()", "filter()", "reduce()", "forEach()"],
     answer: 2,
   },
   {
     id: 9,
     category: "JavaScript",
-    question: "Arrow function-ий ердийн функцээс ялгагдах гол онцлог юу вэ?",
-    options: [
-      "Өөрийн гэсэн 'this' контекст байхгүй",
-      "Үргэлж synchronous ажилладаг",
-      "Нэр өгч болдоггүй",
-      "Илүү их санах ой ашигладаг",
-    ],
-    answer: 0,
+    question:
+      "Хоёр нөхцөл хоёулаа үнэн (true) байхыг шалгах логик оператор аль нь вэ?",
+    options: ["||", "!", "&&", "++"],
+    answer: 2,
   },
   {
     id: 10,
@@ -104,8 +94,6 @@ const questionsData = [
     options: ["then / catch", "try / catch", "async / await", "get / post"],
     answer: 2,
   },
-
-  // === REACT (11-20) ===
   {
     id: 11,
     category: "React",
@@ -117,25 +105,25 @@ const questionsData = [
   {
     id: 12,
     category: "React",
-    question: "Virtual DOM-ийн гол зорилго юу вэ?",
+    question: "React дээр Click үйлдлийг хэрхэн зөв сонсож бичих вэ?",
     options: [
-      "Хөтчийг илүү хурдан ачааллах",
-      "Жинхэнэ DOM-д өөрчлөлт орохоос өмнө хурдан харьцуулалт хийж, зөвхөн өөрчлөгдсөн хэсгийг шинэчлэх",
-      "CSS загварыг сайжруулах",
-      "Хэрэглэгчийн мэдээллийг нууцлах",
+      "onclick={handleClick}",
+      'onClick="handleClick()"',
+      "onClick={handleClick}",
+      'onclick="handleClick()"',
     ],
-    answer: 1,
+    answer: 2,
   },
   {
     id: 13,
     category: "React",
     question:
-      "Component анх ачаалагдах (mount) үед ямар нэг код ажиллуулах бол useEffect-ийн dependency массивт юу бичих вэ?",
+      "Component анх ачаалагдах үед ямар нэг код ажиллуулах бол useEffect-ийн dependency array-д юу бичих вэ?",
     options: [
       "null",
       "Утга бичихгүй хоосон үлдээх [ ]",
       "[stateName]",
-      "Массив бичих шаардлагагүй",
+      "Array бичих шаардлагагүй",
     ],
     answer: 1,
   },
@@ -155,7 +143,7 @@ const questionsData = [
     id: 15,
     category: "React",
     question:
-      "Массиваар гогцоодон олон элемент зурах үед 'key' prop өгөхгүй бол юу болох вэ?",
+      "Array ашиглан олон элемент зурах үед 'key' prop өгөхгүй бол юу болох вэ?",
     options: [
       "Аппликэйшн шууд гацна",
       "React warning өгөх ба performance-д муугаар нөлөөлнө",
@@ -180,17 +168,26 @@ const questionsData = [
     id: 17,
     category: "React",
     question:
-      "Хэт их тооцоолол шаардсан функцийн үр дүнг санах ойд хадгалж (memoize) дахин ажиллуулахаас сэргийлдэг hook аль нь вэ?",
-    options: ["useCallback", "useRef", "useMemo", "useLayoutEffect"],
-    answer: 2,
+      "Нөхцөл үнэн (true) байвал компунентыг харуулах хамгийн богино бичиглэл аль нь вэ?",
+    options: [
+      "condition && <Component/>",
+      "condition ? <Component/>",
+      "if (condition) <Component/>",
+      "condition || <Component/>",
+    ],
+    answer: 0,
   },
   {
     id: 18,
     category: "React",
-    question:
-      "DOM элемент рүү шууд хандах эсвэл re-render хийлгэхгүйгээр утга хадгалахад аль hook тохиромжтой вэ?",
-    options: ["useRef", "useState", "useContext", "useEffect"],
-    answer: 0,
+    question: "useState-ийн утгыг хэрхэн зөв шинэчилдэг вэ?",
+    options: [
+      "state = new_value",
+      "Шинэчлэх функцээр (setState) дамжуулж",
+      "forceUpdate() ашиглаж",
+      "Шууд утга оноож",
+    ],
+    answer: 1,
   },
   {
     id: 19,
@@ -216,8 +213,6 @@ const questionsData = [
     ],
     answer: 1,
   },
-
-  // === API (21-30) ===
   {
     id: 21,
     category: "API",
@@ -257,8 +252,8 @@ const questionsData = [
     id: 25,
     category: "API",
     question:
-      "REST API-аас ялгаатай нь зөвхөн шаардлагатай өгөгдлийг нэг endpoint-оос query бичиж авах боломжтой технологи аль нь вэ?",
-    options: ["SOAP", "GraphQL", "WebSockets", "gRPC"],
+      "Вэбд нэвтэрсэн хэрэглэгчийг баталгаажуулахад өргөн ашиглагддаг token-д суурилсан технологи аль нь вэ?",
+    options: ["JSON", "JWT", "AJAX", "HTML5"],
     answer: 1,
   },
   {
@@ -276,14 +271,15 @@ const questionsData = [
   {
     id: 27,
     category: "API",
-    question: "Idempotent гэж юу вэ? (Жишээ нь GET, PUT аргууд)",
+    question:
+      "Нууц үг, API түлхүүр зэрэг эмзэг мэдээллийг хаана хадгалах нь хамгийн аюулгүй вэ?",
     options: [
-      "Нэг хүсэлтийг олон удаа явуулсан ч серверийн төлөв байдал өөрчлөгдөхгүй ижил үр дүн өгөх чадвар",
-      "Үргэлж шинэ өгөгдөл үүсгэдэг үйлдэл",
-      "Зөвхөн алдаа заадаг хүсэлт",
-      "Сүлжээг тасалдаг үйлдэл",
+      ".js файл дотор",
+      ".env файл дотор",
+      "HTML файл дотор",
+      "README файл дотор",
     ],
-    answer: 0,
+    answer: 1,
   },
   {
     id: 28,
@@ -315,121 +311,6 @@ const questionsData = [
       "Дамжуулж буй өгөгдлийн хэлбэр нь JSON гэдгийг серверт мэдэгдэнэ",
       "Хэрэглэгчийг нэвтрүүлнэ",
       "Өгөгдлийг шифрлэнэ",
-    ],
-    answer: 1,
-  },
-
-  // === NODE.JS & EXPRESS MIDDLEWARE (31-40) ===
-  {
-    id: 31,
-    category: "Express Middleware",
-    question:
-      "Express Middleware функцийн гуравдагч аргумент (аргументын нэр) ихэвчлэн юу байдаг вэ?",
-    options: ["req", "res", "next", "send"],
-    answer: 2,
-  },
-  {
-    id: 32,
-    category: "Express Middleware",
-    question: "Node.js нь ямар төрлийн архитектуртай вэ?",
-    options: [
-      "Single-threaded, event-driven, non-blocking I/O",
-      "Multi-threaded, synchronous, blocking",
-      "Database-centric, heavy-threaded",
-      "None of the above",
-    ],
-    answer: 0,
-  },
-  {
-    id: 33,
-    category: "Express Middleware",
-    question:
-      "Express-д бүх route-үүдэд нэгэн зэрэг middleware үйлчлүүлэхийн тулд яаж бичих вэ?",
-    options: [
-      "app.get(middleware)",
-      "app.use(middleware)",
-      "app.route(middleware)",
-      "app.set(middleware)",
-    ],
-    answer: 1,
-  },
-  {
-    id: 34,
-    category: "Express Middleware",
-    question:
-      "Ирж буй JSON төрлийн өгөгдлийг (body) 'req.body' дээр унших боломжтой болгодог суурь middleware аль нь вэ?",
-    options: [
-      "app.use(express.static())",
-      "app.use(express.json())",
-      "app.use(express.router())",
-      "app.use(express.cors())",
-    ],
-    answer: 1,
-  },
-  {
-    id: 35,
-    category: "Express Middleware",
-    question:
-      "Middleware дотор 'next()' функцийг дуудахгүй орхивол юу болох вэ?",
-    options: [
-      "Дараагийн route рүү шууд шилжинэ",
-      "Аппликэйшн алдаа зааж унтарна",
-      "Хүсэлт гацаж, хариу (response) буцахгүй хүлээгдэнэ",
-      "Автоматаар 404 алдаа өгнө",
-    ],
-    answer: 2,
-  },
-  {
-    id: 36,
-    category: "Express Middleware",
-    question:
-      "Express дээр алдаа баригч (Error handling) middleware нь ердийн middleware-ээс юугаараа ялгаатай вэ?",
-    options: [
-      "Ажиллах хурд нь илүү хурдан",
-      "Хамгийн эхэнд зарлагддаг",
-      "Нийт 4 аргумент авдаг (err, req, res, next)",
-      "Арга нь өөр (app.error ашигладаг)",
-    ],
-    answer: 2,
-  },
-  {
-    id: 37,
-    category: "Express Middleware",
-    question:
-      "Node.js-д гадны бэлэн модулийг кодондоо оруулж ирэхдээ CommonJS-д ямар түлхүүр үг ашигладаг вэ?",
-    options: ["import", "require", "include", "using"],
-    answer: 1,
-  },
-  {
-    id: 38,
-    category: "Express Middleware",
-    question:
-      "Node.js-д арын процесст хүнд тооцоолол хийхэд зориулагдсан үндсэн модуль аль нь вэ?",
-    options: ["fs", "path", "worker_threads", "http"],
-    answer: 2,
-  },
-  {
-    id: 39,
-    category: "Express Middleware",
-    question:
-      "Express дээр статик файлуудыг (зураг, CSS, HTML) гаднаас шууд хандах боломжтой болгоход аль middleware-ийг ашиглах вэ?",
-    options: [
-      "express.static()",
-      "express.json()",
-      "express.urlencoded()",
-      "express.router()",
-    ],
-    answer: 0,
-  },
-  {
-    id: 40,
-    category: "Express Middleware",
-    question: "Node.js-д 'package.json' файлын гол зорилго юу вэ?",
-    options: [
-      "Зөвхөн CSS загварыг хадгалах",
-      "Төслийн мэдээлэл, хамааралтай сангууд (dependencies) болон скриптүүдийг удирдах",
-      "Өгөгдлийн санг удирдах",
-      "Хэрэглэгчдийн логин мэдээллийг хадгалах",
     ],
     answer: 1,
   },
@@ -577,8 +458,8 @@ function App() {
                 Шалгалт эхлэхээс өмнө нэрээ оруулна уу
               </h2>
               <p className="text-sm text-slate-400 mb-6 max-w-sm mx-auto">
-                Тест нийт 40 асуулттай. Таны онооноос хамаарч тэнцвэржүүлсэн
-                багт автоматаар хуваарилагдана.
+                Тест нийт 30 асуулттай. Таны онооноос хамаарч тэнцвэржүүлэн
+                багуудад автоматаар хуваарилна.
               </p>
               <div className="flex flex-col items-center gap-4">
                 <input
